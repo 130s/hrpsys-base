@@ -1265,11 +1265,48 @@ tds.data[4:7], tds.data[8:11]], 'sxyz'))
             posRef += [dx, dy, dz]
             rpyRef += [dr, dp, dw]
             print posRef, rpyRef
-            ret = self.setTargetPose(gname, list(posRef), list(rpyRef), tm)
+#            ret = self.setTargetPose(gname, list(posRef), list(rpyRef), tm)
+            rotMat = euler_matrix(rpyRef[0], rpyRef[1], rpyRef[2])
+            ret = self.setTargetPoseMatrix(gname, list(posRef), rotMat, tm)
+
             if ret and wait:
                 self.waitInterpolationOfGroup(gname)
             return ret
         return False
+
+    def setTargetPoseMatrix(self, gname, pos, rot, tm, frame_name=None):
+        '''
+        @author Hajime Saito (\@emijah)        
+        '''
+
+        if not isinstance(rot, numpy.matrixlib.defmatrix.matrix):
+            return None
+
+        rpy = euler_from_matrix(rot)
+        return self.setTargetPose(gname, pos, rpy, tm, frame_name)
+
+    def setTargetPoseMatrixRelative(self, gname, eename,
+                                    dx=0.0, dy=0.0, dz=0.0,
+                                    drot=numpy.matrix([[1.0, 0.0, 0.0],
+                                                       [0.0, 1.0, 0.0],
+                                                       [0.0, 0.0, 1.0]]),
+                                    tm=10, wait=True, frame_name=None):
+        '''
+        @author Hajime Saito (\@emijah)        
+        '''
+
+        self.waitInterpolationOfGroup(gname)
+        tds = self.getCurrentPose(eename)
+        posRef = numpy.array([tds[3], tds[7], tds[11]])
+        rotRef = numpy.matrix([tds[0:3], tds[4:7], tds[8:11]])
+        daxis = numpy.array([dx, dy, dz])
+        posRef += daxis
+        rotRef = rotRef * drot
+        rpyRef = euler_from_matrix(rotRef)
+        ret = self.setTargetPose(gname, list(posRef), rpyRef, tm, frame_name)
+        if ret and wait:
+            self.waitInterpolationOfGroup(gname)
+        return ret
 
     def clear(self):
         '''!@brief

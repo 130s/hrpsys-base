@@ -290,6 +290,27 @@ bool robot::servo(const char *jname, bool turnon)
 {
     Link *l = NULL;
     if (strcmp(jname, "all") == 0 || strcmp(jname, "ALL") == 0){
+        /* Clear the memory for the msg and the reply */
+        memset (&msg, 0, sizeof (msg));
+        memset (&msg_reply, 0, sizeof (msg_reply));
+
+        /* Setup the message data to send to the server */
+        /*********************** NUM 2 MEANS UPDATE OFFSET ***/
+        num = 2;  
+        snprintf (msg.msg_data, 254, "client %d requesting reply.", getpid ());
+
+        printf ("client: msg_no: _IO_MAX + %d\n", num);
+        fflush (stdout);
+
+        ret = MsgSend (force_sensor_fd, &msg, sizeof (msg), msg_reply, 255);
+        if (ret == -1)
+        {
+            fprintf (stderr, "Unable to MsgSend() to server: %s\n",
+                     strerror (errno));
+            return EXIT_FAILURE;
+        }
+        printf ("client: msg_reply:\n%s\n", msg_reply);
+
         bool ret = true;
         for (int i=0; i<numJoints(); i++){
             ret = ret && servo(i, turnon);
